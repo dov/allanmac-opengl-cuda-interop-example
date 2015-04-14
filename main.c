@@ -247,7 +247,9 @@ main(int argc, char* argv[])
 
       pxl_interop_get_size(interop,&width,&height);
 
-      cuda_err = pxl_interop_map(interop,&cuda_array,stream);
+      cuda_err = pxl_interop_map(interop,stream);
+
+      cuda_err = pxl_interop_get(interop,&cuda_array);
 
       cuda_err = pxl_kernel_launcher(cuda_array,width,height,stream);
 

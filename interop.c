@@ -123,13 +123,21 @@ pxl_interop_get_size(struct pxl_interop* const interop, int* const width, int* c
 //
 
 cudaError_t
-pxl_interop_map(struct pxl_interop* const interop, cudaArray_t* cuda_array, cudaStream_t stream)
+pxl_interop_map(struct pxl_interop* const interop, cudaStream_t stream)
 {
   cudaError_t cuda_err;
   
   // map graphics resources
   cuda_err = cudaGraphicsMapResources(1,&interop->cgr0,stream);
 
+  return cuda_err;
+}
+
+cudaError_t
+pxl_interop_get(struct pxl_interop* const interop, cudaArray_t* cuda_array)
+{
+  cudaError_t cuda_err;
+  
   // get a CUDA Array
   cuda_err = cudaGraphicsSubResourceGetMappedArray(cuda_array,interop->cgr0,0,0);
 
