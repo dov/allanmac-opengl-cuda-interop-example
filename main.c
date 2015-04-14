@@ -168,13 +168,6 @@ main(int argc, char* argv[])
   pxl_glfw_init(&window,1024,1024);
 
   //
-  // SET CALLBACKS
-  //
-
-  glfwSetKeyCallback            (window,pxl_glfw_key_callback);
-  glfwSetFramebufferSizeCallback(window,pxl_glfw_window_size_callback);
-  
-  //
   // INIT CUDA
   //
   cudaError_t cuda_err;
@@ -214,6 +207,13 @@ main(int argc, char* argv[])
 
   glfwSetWindowUserPointer(window,interop);
 
+  //
+  // SET CALLBACKS
+  //
+
+  glfwSetKeyCallback            (window,pxl_glfw_key_callback);
+  glfwSetFramebufferSizeCallback(window,pxl_glfw_window_size_callback);
+  
   //
   // GET ACTUAL WINDOW SIZE
   //

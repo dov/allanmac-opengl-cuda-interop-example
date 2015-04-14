@@ -61,7 +61,7 @@ pxl_kernel(const int width)
 //
 //
 
-#define PXL_KERNEL_THREADS_PER_BLOCK  64
+#define PXL_KERNEL_THREADS_PER_BLOCK  256 // enough for 4Kx2 monitor
 
 extern "C"
 cudaError_t
@@ -77,7 +77,8 @@ pxl_kernel_launcher(cudaArray_const_t array,
 
   const int blocks = (width * height + PXL_KERNEL_THREADS_PER_BLOCK - 1) / PXL_KERNEL_THREADS_PER_BLOCK;
 
-  pxl_kernel<<<blocks,PXL_KERNEL_THREADS_PER_BLOCK,0,stream>>>(width);
+  if (blocks > 0)
+    pxl_kernel<<<blocks,PXL_KERNEL_THREADS_PER_BLOCK,0,stream>>>(width);
 
   return cudaSuccess;
 }
