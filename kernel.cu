@@ -26,6 +26,7 @@ union pxl_rgbx_24
 //
 //
 
+extern "C"
 __global__
 void
 pxl_kernel(const int width)
@@ -36,8 +37,10 @@ pxl_kernel(const int width)
   const int y   = idx / width;
 
   // pixel color
-  const unsigned int ramp = (unsigned int)(((float)x / (float)(width-1)) * 255.0f + 0.5f);
-  const unsigned int bar  = (y / 32) & 3;
+  const int          t    = (unsigned int)clock() / 1250000; // 1.25 GHz
+  const int          xt   = (idx + t) % width;
+  const unsigned int ramp = (unsigned int)(((float)xt / (float)(width-1)) * 255.0f + 0.5f);
+  const unsigned int bar  = ((y + t) / 32) & 3;
 
   union pxl_rgbx_24  rgbx;
 

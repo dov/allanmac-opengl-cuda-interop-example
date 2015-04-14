@@ -125,10 +125,10 @@ pxl_glfw_init(GLFWwindow** window, const int width, const int height)
   glfwSwapInterval(0);
 
   // enable SRGB 
-  glEnable(GL_FRAMEBUFFER_SRGB);
+  // glEnable(GL_FRAMEBUFFER_SRGB);
 
   // only copy r/g/b
-  glColorMask(GL_TRUE,GL_TRUE,GL_TRUE,GL_FALSE);
+  // glColorMask(GL_TRUE,GL_TRUE,GL_TRUE,GL_FALSE);
 }
 
 //
