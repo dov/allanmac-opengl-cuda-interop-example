@@ -1,8 +1,7 @@
 
-/*
- * Copyright 2015 Allan MacKinnon.  All rights reserved.
- *
- */
+//
+//
+//
 
 #pragma once
 
