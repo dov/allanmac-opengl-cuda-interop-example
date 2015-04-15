@@ -124,11 +124,11 @@ pxl_glfw_init(GLFWwindow** window, const int width, const int height)
   // ignore vsync for now
   glfwSwapInterval(0);
 
+  // only copy r/g/b
+  glColorMask(GL_TRUE,GL_TRUE,GL_TRUE,GL_FALSE);
+
   // enable SRGB 
   // glEnable(GL_FRAMEBUFFER_SRGB);
-
-  // only copy r/g/b
-  // glColorMask(GL_TRUE,GL_TRUE,GL_TRUE,GL_FALSE);
 }
 
 //
@@ -200,22 +200,13 @@ main(int argc, char* argv[])
   cuda_err = cudaStreamCreate(&stream);
 
   //
-  // CREATE AND SAVE INTEROP INSTANCE
+  // CREATE INTEROP
   //
   
-  struct pxl_interop* const interop = pxl_interop_create(window);
-
-  glfwSetWindowUserPointer(window,interop);
+  struct pxl_interop* const interop = pxl_interop_create();
 
   //
-  // SET CALLBACKS
-  //
-
-  glfwSetKeyCallback            (window,pxl_glfw_key_callback);
-  glfwSetFramebufferSizeCallback(window,pxl_glfw_window_size_callback);
-  
-  //
-  // GET ACTUAL WINDOW SIZE
+  // RESIZE INTEROP
   //
   
   int width, height;
@@ -226,6 +217,14 @@ main(int argc, char* argv[])
   // resize with initial window dimensions
   cuda_err = pxl_interop_resize(interop,width,height);
 
+  //
+  // SET USER POINTER AND CALLBACKS
+  //
+
+  glfwSetWindowUserPointer      (window,interop);
+  glfwSetKeyCallback            (window,pxl_glfw_key_callback);
+  glfwSetFramebufferSizeCallback(window,pxl_glfw_window_size_callback);
+  
   //
   // LOOP UNTIL DONE
   //

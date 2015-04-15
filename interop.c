@@ -34,7 +34,7 @@ struct pxl_interop
 //
 
 struct pxl_interop*
-pxl_interop_create(GLFWwindow* window)
+pxl_interop_create()
 {
   struct pxl_interop* const interop = (struct pxl_interop*)malloc(sizeof(struct pxl_interop));
   
@@ -42,10 +42,13 @@ pxl_interop_create(GLFWwindow* window)
   interop->cgr0 = NULL;
 
   // render buffer object w/a color buffer
-  glGenRenderbuffers(1,&interop->rb0);
+  glCreateRenderbuffers(1,&interop->rb0);
 
   // frame buffer object
-  glGenFramebuffers(1,&interop->fb0);
+  glCreateFramebuffers(1,&interop->fb0);
+
+  // attach rb0 to the fb0
+  glNamedFramebufferRenderbuffer(interop->fb0,GL_COLOR_ATTACHMENT0,GL_RENDERBUFFER,interop->rb0);
 
   // return it
   return interop;
@@ -55,6 +58,17 @@ pxl_interop_create(GLFWwindow* window)
 void
 pxl_interop_destroy(struct pxl_interop* const interop)
 {
+  // unregister CUDA resource
+  if (interop->cgr0 != NULL)
+    cudaGraphicsUnregisterResource(interop->cgr0);
+
+  // render buffer object w/a color buffer
+  glDeleteRenderbuffers(1,&interop->rb0);
+
+  // frame buffer object
+  glDeleteFramebuffers(1,&interop->fb0);
+
+  // free interop
   free(interop);
 }
 
@@ -69,26 +83,9 @@ pxl_interop_resize(struct pxl_interop* const interop, const int width, const int
   interop->width  = width;
   interop->height = height;
 
-  //
-  // RESIZE FBO'S COLOR BUFFER
-  //
-  
-  // bind rbo
-  glBindRenderbuffer   (GL_RENDERBUFFER,interop->rb0);
   // resize color buffer
-  glRenderbufferStorage(GL_RENDERBUFFER,GL_RGBA8,width,height);
+  glNamedRenderbufferStorage(interop->rb0,GL_RGBA8,width,height);
 
-  // bind fbo to read
-  glBindFramebuffer        (GL_FRAMEBUFFER,interop->fb0);
-  // attach rb0 to the fb0
-  glFramebufferRenderbuffer(GL_FRAMEBUFFER,GL_COLOR_ATTACHMENT0,GL_RENDERBUFFER,interop->rb0);
-
-  // unbind rbo
-  glBindRenderbuffer(GL_RENDERBUFFER,0);
-
-  // bind to default fb
-  glBindFramebuffer(GL_FRAMEBUFFER,0);
-  
   //
   // REGISTER RBO WITH CUDA
   //
@@ -180,13 +177,6 @@ pxl_interop_clear(struct pxl_interop* const interop)
 void
 pxl_interop_blit(struct pxl_interop* const interop)
 {
-  /*
-  glBlitFramebuffer(0,0,              interop->width,interop->height,
-                    0,interop->height,interop->width,0,
-                    GL_COLOR_BUFFER_BIT,
-                    GL_NEAREST);
-  */
-
   glBlitNamedFramebuffer(interop->fb0,0,
                          0,0,              interop->width,interop->height,
                          0,interop->height,interop->width,0,
