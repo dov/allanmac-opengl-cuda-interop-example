@@ -29,13 +29,14 @@ union pxl_rgbx_24
 extern "C"
 __global__
 void
-pxl_kernel(const int width)
+pxl_kernel(const int width, const int height)
 {
   // pixel coordinates
   const int idx = (blockDim.x * blockIdx.x) + threadIdx.x;
   const int x   = idx % width;
   const int y   = idx / width;
 
+#if 1
   // pixel color
   const int          t    = (unsigned int)clock() / 1250000; // 1.25 GHz
   const int          xt   = (idx + t) % width;
@@ -49,12 +50,18 @@ pxl_kernel(const int width)
   rgbx.b  = (bar == 0) || (bar == 3) ? ramp : 0;
   rgbx.na = 255;
 
-  // cudaBoundaryModeZero squelches out-of-bound writes
+#else // DRAW A RED BORDER TO VALIDATE FLIPPED BLIT
+
+  const bool        border = (x == 0) || (x == width-1) || (y == 0) || (y == height-1);
+  union pxl_rgbx_24 rgbx   = { border ? 0xFF0000FF : 0xFF000000 };
+  
+#endif
+
   surf2Dwrite(rgbx.b32, // even simpler: (unsigned int)clock()
-              surf,
-              x*sizeof(rgbx),
-              y,
-              cudaBoundaryModeZero);
+    surf,
+    x*sizeof(rgbx),
+    y,
+    cudaBoundaryModeZero); // squelches out-of-bound writes
 }
 
 //
@@ -78,7 +85,7 @@ pxl_kernel_launcher(cudaArray_const_t array,
   const int blocks = (width * height + PXL_KERNEL_THREADS_PER_BLOCK - 1) / PXL_KERNEL_THREADS_PER_BLOCK;
 
   if (blocks > 0)
-    pxl_kernel<<<blocks,PXL_KERNEL_THREADS_PER_BLOCK,0,stream>>>(width);
+    pxl_kernel<<<blocks,PXL_KERNEL_THREADS_PER_BLOCK,0,stream>>>(width,height);
 
   return cudaSuccess;
 }
