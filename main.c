@@ -95,8 +95,6 @@ pxl_glfw_init(GLFWwindow** window, const int width, const int height)
   if (!glfwInit())
     exit(EXIT_FAILURE);
  
-  const GLFWvidmode* mode = glfwGetVideoMode(glfwGetPrimaryMonitor());
-
   glfwWindowHint(GLFW_DEPTH_BITS,            0);
   glfwWindowHint(GLFW_STENCIL_BITS,          0);
 
@@ -107,7 +105,13 @@ pxl_glfw_init(GLFWwindow** window, const int width, const int height)
 
   glfwWindowHint(GLFW_OPENGL_PROFILE,        GLFW_OPENGL_CORE_PROFILE);
 
+#ifdef PXL_FULLSCREEN
+  GLFWmonitor*       monitor = glfwGetPrimaryMonitor();
+  const GLFWvidmode* mode    = glfwGetVideoMode(monitor);
+  *window                    = glfwCreateWindow(mode->width,mode->height,"GLFW / CUDA Interop",monitor,NULL);
+#else
   *window = glfwCreateWindow(width,height,"GLFW / CUDA Interop",NULL,NULL);
+#endif
 
   if (*window == NULL)
     {
