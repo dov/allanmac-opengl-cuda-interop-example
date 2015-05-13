@@ -268,7 +268,7 @@ main(int argc, char* argv[])
       if (multi_gpu)
         {
           cuda_err = pxl_interop_unmap(interop);
-          cuda_err = cudaStreamSynchronize(pxl_interop_stream_get(interop));
+          // cuda_err = cudaStreamSynchronize(pxl_interop_stream_get(interop));
         }
 
       //
