@@ -258,7 +258,7 @@ main(int argc, char* argv[])
       if (multi_gpu)
         {
           cuda_err = pxl_interop_map(interop);
-          cuda_err = pxl_interop_array_map(interop);
+          // cuda_err = pxl_interop_array_map(interop);
         }
 
       cuda_err = pxl_kernel_launcher(pxl_interop_array_get(interop),
