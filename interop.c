@@ -47,8 +47,6 @@ struct pxl_interop
 struct pxl_interop*
 pxl_interop_create(const bool multi_gpu, const int fbo_count)
 {
-  cudaError_t cuda_err;
-
   struct pxl_interop* const interop = calloc(1,sizeof(*interop));
 
   interop->multi_gpu = multi_gpu;
