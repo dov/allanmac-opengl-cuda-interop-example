@@ -145,7 +145,7 @@ pxl_glfw_window_size_callback(GLFWwindow* window, int width, int height)
   // get context
   struct pxl_interop* const interop = glfwGetWindowUserPointer(window);
 
-  pxl_interop_resize(interop,width,height);
+  pxl_interop_size_set(interop,width,height);
 }
 
 //
@@ -206,7 +206,7 @@ main(int argc, char* argv[])
   // CREATE INTEROP
   //
   
-  struct pxl_interop* const interop = pxl_interop_create();
+  struct pxl_interop* const interop = pxl_interop_create(2);
 
   //
   // RESIZE INTEROP
@@ -218,7 +218,7 @@ main(int argc, char* argv[])
   glfwGetFramebufferSize(window,&width,&height);
 
   // resize with initial window dimensions
-  cuda_err = pxl_interop_resize(interop,width,height);
+  cuda_err = pxl_interop_size_set(interop,width,height);
 
   //
   // SET USER POINTER AND CALLBACKS
@@ -244,20 +244,15 @@ main(int argc, char* argv[])
       // EXECUTE CUDA KERNEL ON RENDER BUFFER
       //
 
-      int         width,height;
-      cudaArray_t cuda_array;
+      int width,height;
 
-      pxl_interop_get_size(interop,&width,&height);
+      pxl_interop_size_get(interop,&width,&height);
 
-      cuda_err = pxl_interop_map(interop,stream);
+      cuda_err = pxl_kernel_launcher(pxl_interop_array_get(interop),
+                                     width,height,
+                                     pxl_interop_stream_get(interop));
 
-      cuda_err = pxl_interop_get(interop,&cuda_array);
-
-      cuda_err = pxl_kernel_launcher(cuda_array,width,height,stream);
-
-      cuda_err = pxl_interop_unmap(interop,stream);
-
-      cuda_err = cudaStreamSynchronize(stream);
+      // cuda_err = cudaStreamSynchronize(stream);
 
       //
       // BLIT
@@ -269,6 +264,8 @@ main(int argc, char* argv[])
       // SWAP
       //
       
+      pxl_interop_swap(interop);
+
       glfwSwapBuffers(window);
 
       //
