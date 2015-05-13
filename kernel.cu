@@ -37,6 +37,7 @@ pxl_kernel(const int width, const int height, const int index)
   const int y   = idx / width;
 
 #if 1
+
   // pixel color
   const int          t    = (unsigned int)clock() / 1100000; // 1.1 GHz
   const int          xt   = (idx + t) % width;
