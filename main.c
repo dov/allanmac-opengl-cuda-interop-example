@@ -11,6 +11,7 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <stdbool.h>
 
 //
 //
@@ -153,7 +154,10 @@ pxl_glfw_window_size_callback(GLFWwindow* window, int width, int height)
 //
 
 cudaError_t
-pxl_kernel_launcher(cudaArray_const_t array, const int width, const int height, cudaStream_t stream);
+pxl_kernel_launcher(cudaArray_const_t array, 
+                    const int         width, 
+                    const int         height,
+                    cudaStream_t      stream);
 
 //
 //
@@ -173,6 +177,7 @@ main(int argc, char* argv[])
   //
   // INIT CUDA
   //
+
   cudaError_t cuda_err;
   
   int gl_device_id,gl_device_count;
@@ -184,8 +189,15 @@ main(int argc, char* argv[])
   cuda_err = cudaSetDevice(cuda_device_id);
 
   //
+  // MULTI-GPU?
+  //
+
+  const bool multi_gpu = gl_device_id != cuda_device_id;
+
+  //
   // INFO
   //
+
   struct cudaDeviceProp props;
 
   cuda_err = cudaGetDeviceProperties(&props,gl_device_id);
@@ -193,14 +205,6 @@ main(int argc, char* argv[])
 
   cuda_err = cudaGetDeviceProperties(&props,cuda_device_id);
   printf("CUDA : %-24s (%2d)\n",props.name,props.multiProcessorCount);
-
-  //
-  // CREATE A CUDA STREAM
-  //
-
-  cudaStream_t stream;
-  
-  cuda_err = cudaStreamCreate(&stream);
 
   //
   // CREATE INTEROP
@@ -231,6 +235,8 @@ main(int argc, char* argv[])
   //
   // LOOP UNTIL DONE
   //
+
+  int step = 0;
   
   while (!glfwWindowShouldClose(window))
     {
@@ -244,27 +250,37 @@ main(int argc, char* argv[])
       // EXECUTE CUDA KERNEL ON RENDER BUFFER
       //
 
-      int width,height;
+      int         width,height;
+      cudaArray_t cuda_array;
 
       pxl_interop_size_get(interop,&width,&height);
+
+      if (multi_gpu)
+        {
+          cuda_err = pxl_interop_map(interop);
+          cuda_err = pxl_interop_array_map(interop);
+        }
 
       cuda_err = pxl_kernel_launcher(pxl_interop_array_get(interop),
                                      width,height,
                                      pxl_interop_stream_get(interop));
 
-      // cuda_err = cudaStreamSynchronize(stream);
+      if (multi_gpu)
+        {
+          cuda_err = pxl_interop_unmap(interop);
+          cuda_err = cudaStreamSynchronize(pxl_interop_stream_get(interop));
+        }
 
       //
       // BLIT
       // 
 
       pxl_interop_blit(interop);
+      pxl_interop_swap(interop);
 
       //
       // SWAP
       //
-      
-      pxl_interop_swap(interop);
 
       glfwSwapBuffers(window);
 

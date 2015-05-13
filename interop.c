@@ -35,8 +35,8 @@ struct pxl_interop
   cudaGraphicsResource_t* cgr;
   cudaArray_t*            ca;
 
-  // CUDA stream
-  cudaStream_t            stream;
+  // CUDA streams
+  cudaStream_t*           stream;
 };
 
 //
@@ -46,15 +46,19 @@ struct pxl_interop
 struct pxl_interop*
 pxl_interop_create(const int fbo_count)
 {
+  cudaError_t cuda_err;
+
   struct pxl_interop* const interop = calloc(1,sizeof(*interop));
 
   interop->count = fbo_count;
+  interop->index = 0;
   
   // allocate arrays
-  interop->fb  = calloc(fbo_count,sizeof(*(interop->fb )));
-  interop->rb  = calloc(fbo_count,sizeof(*(interop->rb )));
-  interop->cgr = calloc(fbo_count,sizeof(*(interop->cgr)));
-  interop->ca  = calloc(fbo_count,sizeof(*(interop->ca)));
+  interop->fb     = calloc(fbo_count,sizeof(*(interop->fb )));
+  interop->rb     = calloc(fbo_count,sizeof(*(interop->rb )));
+  interop->cgr    = calloc(fbo_count,sizeof(*(interop->cgr)));
+  interop->ca     = calloc(fbo_count,sizeof(*(interop->ca)));
+  interop->stream = calloc(fbo_count,sizeof(*(interop->stream)));
 
   // render buffer object w/a color buffer
   glCreateRenderbuffers(fbo_count,interop->rb);
@@ -62,17 +66,16 @@ pxl_interop_create(const int fbo_count)
   // frame buffer object
   glCreateFramebuffers(fbo_count,interop->fb);
 
-  // attach rb0 to the fb0
+  // attach rbo to fbo
   for (int index=0; index<fbo_count; index++)  
     {
       glNamedFramebufferRenderbuffer(interop->fb[index],
                                      GL_COLOR_ATTACHMENT0,
                                      GL_RENDERBUFFER,
                                      interop->rb[index]);
-    }
 
-  // create an interop stream 
-  cudaError_t cuda_err = cudaStreamCreate(&interop->stream);
+      cuda_err = cudaStreamCreate(&interop->stream[index]);
+    }
 
   // return it
   return interop;
@@ -82,22 +85,29 @@ pxl_interop_create(const int fbo_count)
 void
 pxl_interop_destroy(struct pxl_interop* const interop)
 {
-  // resize color buffer
+  cudaError_t cuda_err;
+
+  // unregister CUDA resources
   for (int index=0; index<interop->count; index++)
     {
-      // unregister CUDA resource
       if (interop->cgr[index] != NULL)
-        cudaGraphicsUnregisterResource(interop->cgr[index]);
-    }
+        cuda_err = cudaGraphicsUnregisterResource(interop->cgr[index]);
 
-  // destroy stream
-  cudaStreamDestroy(interop->stream);
+      cuda_err = cudaStreamDestroy(interop->stream[index]);
+    }
 
   // delete rbo's
   glDeleteRenderbuffers(interop->count,interop->rb);
 
   // delete fbo's
   glDeleteFramebuffers(interop->count,interop->fb);
+
+  // free buffers and resources
+  free(interop->fb);
+  free(interop->rb);
+  free(interop->cgr);
+  free(interop->ca);
+  free(interop->stream);
 
   // free interop
   free(interop);
@@ -126,7 +136,8 @@ pxl_interop_size_set(struct pxl_interop* const interop, const int width, const i
       // resize rbo
       glNamedRenderbufferStorage(interop->rb[index],GL_RGBA8,width,height);
 
-      // cudaGraphicsResource_t cgr;      
+      // probe fbo status
+      // glCheckNamedFramebufferStatus(interop->fb[index],0);
 
       // register rbo
       cuda_err = cudaGraphicsGLRegisterImage(&interop->cgr[index],
@@ -134,21 +145,21 @@ pxl_interop_size_set(struct pxl_interop* const interop, const int width, const i
                                              GL_RENDERBUFFER,
                                              cudaGraphicsRegisterFlagsSurfaceLoadStore | 
                                              cudaGraphicsRegisterFlagsWriteDiscard);
+    }
 
-      // map graphics resource
-      cuda_err = cudaGraphicsMapResources(1,&interop->cgr[index],interop->stream);
+  // map graphics resources
+  cuda_err = cudaGraphicsMapResources(interop->count,interop->cgr,0);
 
-      // get a CUDA Array
+  // get CUDA Array refernces
+  for (int index=0; index<interop->count; index++)
+    {
       cuda_err = cudaGraphicsSubResourceGetMappedArray(&interop->ca[index],
                                                        interop->cgr[index],
                                                        0,0);
-
-      // unmap graphics resource
-      cuda_err = cudaGraphicsUnmapResources(1,&interop->cgr[index],interop->stream);
-
-      // probe fbo status
-      glCheckNamedFramebufferStatus(interop->fb[index],0);
     }
+
+  // unmap graphics resources
+  cuda_err = cudaGraphicsUnmapResources(interop->count,interop->cgr,0);
   
   return cuda_err;
 }
@@ -164,16 +175,59 @@ pxl_interop_size_get(struct pxl_interop* const interop, int* const width, int* c
 //
 //
 
+cudaStream_t
+pxl_interop_stream_get(struct pxl_interop* const interop)
+{
+  return interop->stream[interop->index];
+}
+
+//
+//
+//
+
+cudaError_t
+pxl_interop_map(struct pxl_interop* const interop)
+{
+  cudaError_t cuda_err;
+  
+  // map graphics resources
+  cuda_err = cudaGraphicsMapResources(1,&interop->cgr[interop->index],
+                                      interop->stream[interop->index]);
+ 
+  return cuda_err;
+}
+ 
+cudaError_t
+pxl_interop_unmap(struct pxl_interop* const interop)
+{
+  cudaError_t cuda_err;
+  
+  cuda_err = cudaGraphicsUnmapResources(1,&interop->cgr[interop->index],
+                                        interop->stream[interop->index]);
+ 
+  return cuda_err;
+}
+
+cudaError_t
+pxl_interop_array_map(struct pxl_interop* const interop)
+{
+  cudaError_t cuda_err;
+  
+  // get a CUDA Array
+  cuda_err = cudaGraphicsSubResourceGetMappedArray(&interop->ca[interop->index],
+                                                   interop->cgr[interop->index],
+                                                   0,0);
+  return cuda_err;
+}
+
+//
+//
+//
+ 
 cudaArray_const_t
 pxl_interop_array_get(struct pxl_interop* const interop)
 {
   return interop->ca[interop->index];
-}
-
-cudaStream_t
-pxl_interop_stream_get(struct pxl_interop* const interop)
-{
-  return interop->stream;
 }
 
 //
