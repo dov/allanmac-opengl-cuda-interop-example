@@ -256,8 +256,6 @@ main(int argc, char* argv[])
 
       cuda_err = pxl_interop_map(interop,0);
 
-      // cuda_err = pxl_interop_array_map(interop); // NOT NEEDED ANYMORE?
-
       cuda_err = pxl_kernel_launcher(pxl_interop_array_get(interop),
                                      width,height,
                                      pxl_interop_index_get(interop),

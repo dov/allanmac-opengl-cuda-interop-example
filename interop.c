@@ -193,6 +193,10 @@ pxl_interop_unmap(struct pxl_interop* const interop, cudaStream_t stream)
 cudaError_t
 pxl_interop_array_map(struct pxl_interop* const interop)
 {
+  //
+  // FIXME -- IS THIS EVEN NEEDED?
+  //
+
   cudaError_t cuda_err;
   
   // get a CUDA Array
