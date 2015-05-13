@@ -20,6 +20,7 @@
 
 struct pxl_interop
 {
+  // number of fbo's
   int                     count;
   int                     index;
 
