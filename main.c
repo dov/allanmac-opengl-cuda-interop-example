@@ -258,19 +258,18 @@ main(int argc, char* argv[])
 
       if (multi_gpu)
         {
-          cuda_err = pxl_interop_map(interop);
+          cuda_err = pxl_interop_map(interop,0);
           // cuda_err = pxl_interop_array_map(interop); // NOT NEEDED?
         }
 
       cuda_err = pxl_kernel_launcher(pxl_interop_array_get(interop),
                                      width,height,
                                      pxl_interop_index_get(interop),
-                                     pxl_interop_stream_get(interop));
+                                     0);
 
       if (multi_gpu)
         {
-          cuda_err = pxl_interop_unmap(interop);
-          // cuda_err = cudaStreamSynchronize(pxl_interop_stream_get(interop)); // NOT NEEDED?
+          cuda_err = pxl_interop_unmap(interop,0);
         }
 
       //
@@ -278,7 +277,6 @@ main(int argc, char* argv[])
       // 
 
       pxl_interop_blit(interop);
-
       pxl_interop_swap(interop);
 
       //

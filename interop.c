@@ -35,9 +35,6 @@ struct pxl_interop
   // CUDA resources
   cudaGraphicsResource_t* cgr;
   cudaArray_t*            ca;
-
-  // CUDA streams
-  cudaStream_t*           stream;
 };
 
 //
@@ -55,11 +52,10 @@ pxl_interop_create(const int fbo_count)
   interop->index = 0;
   
   // allocate arrays
-  interop->fb     = calloc(fbo_count,sizeof(*(interop->fb )));
-  interop->rb     = calloc(fbo_count,sizeof(*(interop->rb )));
-  interop->cgr    = calloc(fbo_count,sizeof(*(interop->cgr)));
-  interop->ca     = calloc(fbo_count,sizeof(*(interop->ca)));
-  interop->stream = calloc(fbo_count,sizeof(*(interop->stream)));
+  interop->fb  = calloc(fbo_count,sizeof(*(interop->fb )));
+  interop->rb  = calloc(fbo_count,sizeof(*(interop->rb )));
+  interop->cgr = calloc(fbo_count,sizeof(*(interop->cgr)));
+  interop->ca  = calloc(fbo_count,sizeof(*(interop->ca)));
 
   // render buffer object w/a color buffer
   glCreateRenderbuffers(fbo_count,interop->rb);
@@ -74,8 +70,6 @@ pxl_interop_create(const int fbo_count)
                                      GL_COLOR_ATTACHMENT0,
                                      GL_RENDERBUFFER,
                                      interop->rb[index]);
-
-      cuda_err = cudaStreamCreate(&interop->stream[index]);
     }
 
   // return it
@@ -93,8 +87,6 @@ pxl_interop_destroy(struct pxl_interop* const interop)
     {
       if (interop->cgr[index] != NULL)
         cuda_err = cudaGraphicsUnregisterResource(interop->cgr[index]);
-
-      cuda_err = cudaStreamDestroy(interop->stream[index]);
     }
 
   // delete rbo's
@@ -108,7 +100,6 @@ pxl_interop_destroy(struct pxl_interop* const interop)
   free(interop->rb);
   free(interop->cgr);
   free(interop->ca);
-  free(interop->stream);
 
   // free interop
   free(interop);
@@ -177,24 +168,22 @@ pxl_interop_size_get(struct pxl_interop* const interop, int* const width, int* c
 //
 
 cudaError_t
-pxl_interop_map(struct pxl_interop* const interop)
+pxl_interop_map(struct pxl_interop* const interop, cudaStream_t stream)
 {
   cudaError_t cuda_err;
   
   // map graphics resources
-  cuda_err = cudaGraphicsMapResources(1,&interop->cgr[interop->index],
-                                      interop->stream[interop->index]);
+  cuda_err = cudaGraphicsMapResources(1,&interop->cgr[interop->index],stream);
  
   return cuda_err;
 }
  
 cudaError_t
-pxl_interop_unmap(struct pxl_interop* const interop)
+pxl_interop_unmap(struct pxl_interop* const interop, cudaStream_t stream)
 {
   cudaError_t cuda_err;
   
-  cuda_err = cudaGraphicsUnmapResources(1,&interop->cgr[interop->index],
-                                        interop->stream[interop->index]);
+  cuda_err = cudaGraphicsUnmapResources(1,&interop->cgr[interop->index],stream);
  
   return cuda_err;
 }
@@ -219,12 +208,6 @@ cudaArray_const_t
 pxl_interop_array_get(struct pxl_interop* const interop)
 {
   return interop->ca[interop->index];
-}
-
-cudaStream_t
-pxl_interop_stream_get(struct pxl_interop* const interop)
-{
-  return interop->stream[interop->index];
 }
 
 int
