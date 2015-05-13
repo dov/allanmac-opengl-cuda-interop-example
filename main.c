@@ -211,7 +211,7 @@ main(int argc, char* argv[])
   // CREATE INTEROP
   //
   
-  struct pxl_interop* const interop = pxl_interop_create(2);
+  struct pxl_interop* const interop = pxl_interop_create(multi_gpu,2);
 
   //
   // RESIZE INTEROP
@@ -237,8 +237,6 @@ main(int argc, char* argv[])
   // LOOP UNTIL DONE
   //
 
-  int step = 0;
-  
   while (!glfwWindowShouldClose(window))
     {
       //
@@ -256,21 +254,16 @@ main(int argc, char* argv[])
 
       pxl_interop_size_get(interop,&width,&height);
 
-      if (multi_gpu)
-        {
-          cuda_err = pxl_interop_map(interop,0);
-          // cuda_err = pxl_interop_array_map(interop); // NOT NEEDED?
-        }
+      cuda_err = pxl_interop_map(interop,0);
+
+      // cuda_err = pxl_interop_array_map(interop); // NOT NEEDED ANYMORE?
 
       cuda_err = pxl_kernel_launcher(pxl_interop_array_get(interop),
                                      width,height,
                                      pxl_interop_index_get(interop),
                                      0);
 
-      if (multi_gpu)
-        {
-          cuda_err = pxl_interop_unmap(interop,0);
-        }
+      cuda_err = pxl_interop_unmap(interop,0);
 
       //
       // BLIT & SWAP FBO

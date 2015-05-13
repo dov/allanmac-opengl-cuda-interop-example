@@ -20,6 +20,9 @@
 
 struct pxl_interop
 {
+  // split GPUs?
+  bool                    multi_gpu;
+
   // number of fbo's
   int                     count;
   int                     index;
@@ -42,14 +45,15 @@ struct pxl_interop
 //
 
 struct pxl_interop*
-pxl_interop_create(const int fbo_count)
+pxl_interop_create(const bool multi_gpu, const int fbo_count)
 {
   cudaError_t cuda_err;
 
   struct pxl_interop* const interop = calloc(1,sizeof(*interop));
 
-  interop->count = fbo_count;
-  interop->index = 0;
+  interop->multi_gpu = multi_gpu;
+  interop->count     = fbo_count;
+  interop->index     = 0;
   
   // allocate arrays
   interop->fb  = calloc(fbo_count,sizeof(*(interop->fb )));
@@ -170,22 +174,20 @@ pxl_interop_size_get(struct pxl_interop* const interop, int* const width, int* c
 cudaError_t
 pxl_interop_map(struct pxl_interop* const interop, cudaStream_t stream)
 {
-  cudaError_t cuda_err;
-  
+  if (!interop->multi_gpu)
+    return cudaSuccess;
+
   // map graphics resources
-  cuda_err = cudaGraphicsMapResources(1,&interop->cgr[interop->index],stream);
- 
-  return cuda_err;
+  return cudaGraphicsMapResources(1,&interop->cgr[interop->index],stream);
 }
  
 cudaError_t
 pxl_interop_unmap(struct pxl_interop* const interop, cudaStream_t stream)
 {
-  cudaError_t cuda_err;
-  
-  cuda_err = cudaGraphicsUnmapResources(1,&interop->cgr[interop->index],stream);
- 
-  return cuda_err;
+  if (!interop->multi_gpu)
+    return cudaSuccess;
+
+  return cudaGraphicsUnmapResources(1,&interop->cgr[interop->index],stream);
 }
 
 cudaError_t

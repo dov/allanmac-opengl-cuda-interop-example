@@ -10,13 +10,14 @@
 //
 
 #include <cuda_runtime.h>
+#include <stdbool.h>
 
 //
 //
 //
 
 struct pxl_interop*
-pxl_interop_create(const int fbo_count);
+pxl_interop_create(const bool multi_gpu, const int fbo_count);
 
 void
 pxl_interop_destroy(struct pxl_interop* const interop);
