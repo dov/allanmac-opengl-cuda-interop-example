@@ -176,16 +176,6 @@ pxl_interop_size_get(struct pxl_interop* const interop, int* const width, int* c
 //
 //
 
-cudaStream_t
-pxl_interop_stream_get(struct pxl_interop* const interop)
-{
-  return interop->stream[interop->index];
-}
-
-//
-//
-//
-
 cudaError_t
 pxl_interop_map(struct pxl_interop* const interop)
 {
@@ -229,6 +219,18 @@ cudaArray_const_t
 pxl_interop_array_get(struct pxl_interop* const interop)
 {
   return interop->ca[interop->index];
+}
+
+cudaStream_t
+pxl_interop_stream_get(struct pxl_interop* const interop)
+{
+  return interop->stream[interop->index];
+}
+
+int
+pxl_interop_index_get(struct pxl_interop* const interop)
+{
+  return interop->index;
 }
 
 //

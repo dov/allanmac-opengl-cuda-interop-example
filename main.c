@@ -157,6 +157,7 @@ cudaError_t
 pxl_kernel_launcher(cudaArray_const_t array, 
                     const int         width, 
                     const int         height,
+                    const int         index,
                     cudaStream_t      stream);
 
 //
@@ -258,28 +259,30 @@ main(int argc, char* argv[])
       if (multi_gpu)
         {
           cuda_err = pxl_interop_map(interop);
-          // cuda_err = pxl_interop_array_map(interop);
+          // cuda_err = pxl_interop_array_map(interop); // NOT NEEDED?
         }
 
       cuda_err = pxl_kernel_launcher(pxl_interop_array_get(interop),
                                      width,height,
+                                     pxl_interop_index_get(interop),
                                      pxl_interop_stream_get(interop));
 
       if (multi_gpu)
         {
           cuda_err = pxl_interop_unmap(interop);
-          // cuda_err = cudaStreamSynchronize(pxl_interop_stream_get(interop));
+          // cuda_err = cudaStreamSynchronize(pxl_interop_stream_get(interop)); // NOT NEEDED?
         }
 
       //
-      // BLIT
+      // BLIT & SWAP FBO
       // 
 
       pxl_interop_blit(interop);
+
       pxl_interop_swap(interop);
 
       //
-      // SWAP
+      // SWAP WINDOW
       //
 
       glfwSwapBuffers(window);

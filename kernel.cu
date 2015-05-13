@@ -29,7 +29,7 @@ union pxl_rgbx_24
 extern "C"
 __global__
 void
-pxl_kernel(const int width, const int height)
+pxl_kernel(const int width, const int height, const int index)
 {
   // pixel coordinates
   const int idx = (blockDim.x * blockIdx.x) + threadIdx.x;
@@ -38,7 +38,7 @@ pxl_kernel(const int width, const int height)
 
 #if 1
   // pixel color
-  const int          t    = (unsigned int)clock() / 1250000; // 1.25 GHz
+  const int          t    = (unsigned int)clock() / 1100000; // 1.1 GHz
   const int          xt   = (idx + t) % width;
   const unsigned int ramp = (unsigned int)(((float)xt / (float)(width-1)) * 255.0f + 0.5f);
   const unsigned int bar  = ((y + t) / 32) & 3;
@@ -53,7 +53,7 @@ pxl_kernel(const int width, const int height)
 #else // DRAW A RED BORDER TO VALIDATE FLIPPED BLIT
 
   const bool        border = (x == 0) || (x == width-1) || (y == 0) || (y == height-1);
-  union pxl_rgbx_24 rgbx   = { border ? 0xFF0000FF : 0xFF000000 };
+  union pxl_rgbx_24 rgbx   = { border ? 0xFF0000FF : index==0 ? 0xFF000000 : 0xFFFFFFFF };
   
 #endif
 
@@ -75,6 +75,7 @@ cudaError_t
 pxl_kernel_launcher(cudaArray_const_t array,
                     const int         width,
                     const int         height,
+                    const int         index,
                     cudaStream_t      stream)
 {
   cudaError_t cuda_err = cudaBindSurfaceToArray(surf,array);
@@ -85,7 +86,7 @@ pxl_kernel_launcher(cudaArray_const_t array,
   const int blocks = (width * height + PXL_KERNEL_THREADS_PER_BLOCK - 1) / PXL_KERNEL_THREADS_PER_BLOCK;
 
   if (blocks > 0)
-    pxl_kernel<<<blocks,PXL_KERNEL_THREADS_PER_BLOCK,0,stream>>>(width,height);
+    pxl_kernel<<<blocks,PXL_KERNEL_THREADS_PER_BLOCK,0,stream>>>(width,height,index);
 
   return cudaSuccess;
 }
