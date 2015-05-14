@@ -268,6 +268,7 @@ main(int argc, char* argv[])
       // 
 
       pxl_interop_blit(interop);
+      pxl_interop_clear(interop);
       pxl_interop_swap(interop);
 
       //

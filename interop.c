@@ -49,7 +49,7 @@ pxl_interop_create(const bool multi_gpu, const int fbo_count)
 {
   struct pxl_interop* const interop = calloc(1,sizeof(*interop));
 
-  interop->multi_gpu = multi_gpu;
+  interop->multi_gpu = true; // multi_gpu;
   interop->count     = fbo_count;
   interop->index     = 0;
   
@@ -238,16 +238,12 @@ void
 pxl_interop_clear(struct pxl_interop* const interop)
 {
   /*
-  const GLenum draw_buffer[] = { GL_COLOR_ATTACHMENT0 };
-  const GLuint clear_color[] = { 255, 0, 0, 255 };
-                       
-  glNamedFramebufferDrawBuffers(interop->fb0,1,draw_buffer);
-  glClearNamedFramebufferuiv(interop->fb0,GL_COLOR,0,clear_color);
+  static const GLenum attachments[] = { GL_COLOR_ATTACHMENT0 };
+  glInvalidateNamedFramebufferData(interop->fb[interop->index],1,attachments);
   */
 
-  static const GLenum attachments[] = { GL_COLOR_ATTACHMENT0 };
-
-  glInvalidateNamedFramebufferData(interop->fb[interop->index],1,attachments);
+  const GLfloat clear_color[] = { 1.0f, 1.0f, 1.0f, 1.0f };
+  glClearNamedFramebufferfv(interop->fb[interop->index],GL_COLOR,0,clear_color);
 }
 
 //
