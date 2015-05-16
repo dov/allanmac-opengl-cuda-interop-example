@@ -49,7 +49,7 @@ pxl_interop_create(const bool multi_gpu, const int fbo_count)
 {
   struct pxl_interop* const interop = calloc(1,sizeof(*interop));
 
-  interop->multi_gpu = true; // multi_gpu;
+  interop->multi_gpu = multi_gpu;
   interop->count     = fbo_count;
   interop->index     = 0;
   

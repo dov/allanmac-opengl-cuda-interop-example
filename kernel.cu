@@ -29,7 +29,7 @@ union pxl_rgbx_24
 extern "C"
 __global__
 void
-pxl_kernel(const int width, const int height, const int index)
+pxl_kernel(const int width, const int height)
 {
   // pixel coordinates
   const int idx = (blockDim.x * blockIdx.x) + threadIdx.x;
@@ -54,7 +54,7 @@ pxl_kernel(const int width, const int height, const int index)
 #else // DRAW A RED BORDER TO VALIDATE FLIPPED BLIT
 
   const bool        border = (x == 0) || (x == width-1) || (y == 0) || (y == height-1);
-  union pxl_rgbx_24 rgbx   = { border ? 0xFF0000FF : index==0 ? 0xFF000000 : 0xFFFFFFFF };
+  union pxl_rgbx_24 rgbx   = { border ? 0xFF0000FF : 0xFF000000 };
   
 #endif
 
@@ -76,19 +76,27 @@ cudaError_t
 pxl_kernel_launcher(cudaArray_const_t array,
                     const int         width,
                     const int         height,
-                    const int         index,
+                    cudaEvent_t       event,
                     cudaStream_t      stream)
 {
-  cudaError_t cuda_err = cudaBindSurfaceToArray(surf,array);
+  cudaError_t cuda_err;
+
+  // cuda_err = cudaEventRecord(event,stream);
+
+  cuda_err = cudaBindSurfaceToArray(surf,array);
 
   if (cuda_err)
     return cuda_err;
 
   const int blocks = (width * height + PXL_KERNEL_THREADS_PER_BLOCK - 1) / PXL_KERNEL_THREADS_PER_BLOCK;
 
-  if (blocks > 0)
-    pxl_kernel<<<blocks,PXL_KERNEL_THREADS_PER_BLOCK,0,stream>>>(width,height,index);
+  // cuda_err = cudaEventRecord(event,stream);
 
+  if (blocks > 0)
+    pxl_kernel<<<blocks,PXL_KERNEL_THREADS_PER_BLOCK,0,stream>>>(width,height);
+
+  // cuda_err = cudaStreamWaitEvent(stream,event,0);
+  
   return cudaSuccess;
 }
 

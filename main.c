@@ -157,7 +157,7 @@ cudaError_t
 pxl_kernel_launcher(cudaArray_const_t array, 
                     const int         width, 
                     const int         height,
-                    const int         index,
+                    cudaEvent_t       event,
                     cudaStream_t      stream);
 
 //
@@ -208,10 +208,19 @@ main(int argc, char* argv[])
   printf("CUDA : %-24s (%2d)\n",props.name,props.multiProcessorCount);
 
   //
+  // CREATE CUDA STREAM & EVENT
+  //
+  cudaStream_t stream;
+  cudaEvent_t  event;
+
+  cuda_err = cudaStreamCreateWithFlags(&stream,cudaStreamDefault);   // optionally ignore default stream behavior
+  cuda_err = cudaEventCreateWithFlags(&event,cudaEventBlockingSync); // | cudaEventDisableTiming);
+
+  //
   // CREATE INTEROP
   //
   
-  struct pxl_interop* const interop = pxl_interop_create(multi_gpu,2);
+  struct pxl_interop* const interop = pxl_interop_create(false /*multi_gpu*/,2); // TESTING -- DO NOT SET TO FALSE, ONLY TRUE IS RELIABLE
 
   //
   // RESIZE INTEROP
@@ -254,21 +263,22 @@ main(int argc, char* argv[])
 
       pxl_interop_size_get(interop,&width,&height);
 
-      cuda_err = pxl_interop_map(interop,0);
+      cuda_err = pxl_interop_map(interop,stream);
 
       cuda_err = pxl_kernel_launcher(pxl_interop_array_get(interop),
-                                     width,height,
-                                     pxl_interop_index_get(interop),
-                                     0);
+                                     width,
+                                     height,
+                                     event,
+                                     stream);
 
-      cuda_err = pxl_interop_unmap(interop,0);
+      cuda_err = pxl_interop_unmap(interop,stream);
 
       //
       // BLIT & SWAP FBO
       // 
 
       pxl_interop_blit(interop);
-      pxl_interop_clear(interop);
+      // pxl_interop_clear(interop);
       pxl_interop_swap(interop);
 
       //
