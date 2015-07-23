@@ -220,7 +220,7 @@ main(int argc, char* argv[])
   // CREATE INTEROP
   //
   
-  struct pxl_interop* const interop = pxl_interop_create(false /*multi_gpu*/,2); // TESTING -- DO NOT SET TO FALSE, ONLY TRUE IS RELIABLE
+  struct pxl_interop* const interop = pxl_interop_create(true /*multi_gpu*/,2); // TESTING -- DO NOT SET TO FALSE, ONLY TRUE IS RELIABLE
 
   //
   // RESIZE INTEROP
