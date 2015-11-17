@@ -182,11 +182,9 @@ main(int argc, char* argv[])
   cudaError_t cuda_err;
   
   int gl_device_id,gl_device_count;
-      
   cuda_err = cudaGLGetDevices(&gl_device_count,&gl_device_id,1,cudaGLDeviceListAll);
 
   int cuda_device_id = (argc > 1) ? atoi(argv[1]) : gl_device_id;
-  
   cuda_err = cudaSetDevice(cuda_device_id);
 
   //
@@ -215,6 +213,24 @@ main(int argc, char* argv[])
 
   cuda_err = cudaStreamCreateWithFlags(&stream,cudaStreamDefault);   // optionally ignore default stream behavior
   cuda_err = cudaEventCreateWithFlags(&event,cudaEventBlockingSync); // | cudaEventDisableTiming);
+
+  //
+  // UPDATE DEVICE LIMITS
+  //
+
+  // #ifdef _DEBUG
+  // check printf() FIFO limit
+  size_t fifo;
+
+  cuda_err = cudaDeviceGetLimit(&fifo,cudaLimitPrintfFifoSize);
+
+  printf("fifo = %Iu\n",fifo);
+
+  cuda_err = cudaDeviceSetLimit(cudaLimitPrintfFifoSize,fifo*16);
+  cuda_err = cudaDeviceGetLimit(&fifo,cudaLimitPrintfFifoSize);
+
+  printf("fifo = %Iu\n",fifo);
+  // #endif
 
   //
   // CREATE INTEROP
