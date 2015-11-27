@@ -23,6 +23,7 @@
 //
 //
 
+#include "assert_cuda.h"
 #include "interop.h"
 
 //
@@ -170,7 +171,6 @@ main(int argc, char* argv[])
   //
   // INIT GLFW
   //
-
   GLFWwindow* window;
 
   pxl_glfw_init(&window,1024,1024);
@@ -178,31 +178,28 @@ main(int argc, char* argv[])
   //
   // INIT CUDA
   //
-
   cudaError_t cuda_err;
   
   int gl_device_id,gl_device_count;
-  cuda_err = cudaGLGetDevices(&gl_device_count,&gl_device_id,1,cudaGLDeviceListAll);
+  cuda_err = cuda(GLGetDevices(&gl_device_count,&gl_device_id,1,cudaGLDeviceListAll));
 
   int cuda_device_id = (argc > 1) ? atoi(argv[1]) : gl_device_id;
-  cuda_err = cudaSetDevice(cuda_device_id);
+  cuda_err = cuda(SetDevice(cuda_device_id));
 
   //
   // MULTI-GPU?
   //
-
   const bool multi_gpu = gl_device_id != cuda_device_id;
 
   //
   // INFO
   //
-
   struct cudaDeviceProp props;
 
-  cuda_err = cudaGetDeviceProperties(&props,gl_device_id);
+  cuda_err = cuda(GetDeviceProperties(&props,gl_device_id));
   printf("GL   : %-24s (%2d)\n",props.name,props.multiProcessorCount);
 
-  cuda_err = cudaGetDeviceProperties(&props,cuda_device_id);
+  cuda_err = cuda(GetDeviceProperties(&props,cuda_device_id));
   printf("CUDA : %-24s (%2d)\n",props.name,props.multiProcessorCount);
 
   //
@@ -211,32 +208,14 @@ main(int argc, char* argv[])
   cudaStream_t stream;
   cudaEvent_t  event;
 
-  cuda_err = cudaStreamCreateWithFlags(&stream,cudaStreamDefault);   // optionally ignore default stream behavior
-  cuda_err = cudaEventCreateWithFlags(&event,cudaEventBlockingSync); // | cudaEventDisableTiming);
-
-  //
-  // UPDATE DEVICE LIMITS
-  //
-
-  // #ifdef _DEBUG
-  // check printf() FIFO limit
-  size_t fifo;
-
-  cuda_err = cudaDeviceGetLimit(&fifo,cudaLimitPrintfFifoSize);
-
-  printf("fifo = %Iu\n",fifo);
-
-  cuda_err = cudaDeviceSetLimit(cudaLimitPrintfFifoSize,fifo*16);
-  cuda_err = cudaDeviceGetLimit(&fifo,cudaLimitPrintfFifoSize);
-
-  printf("fifo = %Iu\n",fifo);
-  // #endif
+  cuda_err = cuda(StreamCreateWithFlags(&stream,cudaStreamDefault));   // optionally ignore default stream behavior
+  cuda_err = cuda(EventCreateWithFlags(&event,cudaEventBlockingSync)); // | cudaEventDisableTiming);
 
   //
   // CREATE INTEROP
   //
-  
-  struct pxl_interop* const interop = pxl_interop_create(true /*multi_gpu*/,2); // TESTING -- DO NOT SET TO FALSE, ONLY TRUE IS RELIABLE
+  // TESTING -- DO NOT SET TO FALSE, ONLY TRUE IS RELIABLE
+  struct pxl_interop* const interop = pxl_interop_create(true /*multi_gpu*/,2);
 
   //
   // RESIZE INTEROP
@@ -253,7 +232,6 @@ main(int argc, char* argv[])
   //
   // SET USER POINTER AND CALLBACKS
   //
-
   glfwSetWindowUserPointer      (window,interop);
   glfwSetKeyCallback            (window,pxl_glfw_key_callback);
   glfwSetFramebufferSizeCallback(window,pxl_glfw_window_size_callback);
@@ -261,19 +239,16 @@ main(int argc, char* argv[])
   //
   // LOOP UNTIL DONE
   //
-
   while (!glfwWindowShouldClose(window))
     {
       //
       // MONITOR FPS
       //
-
       pxl_glfw_fps(window);
       
       //
       // EXECUTE CUDA KERNEL ON RENDER BUFFER
       //
-
       int         width,height;
       cudaArray_t cuda_array;
 
@@ -292,7 +267,6 @@ main(int argc, char* argv[])
       //
       // BLIT & SWAP FBO
       // 
-
       pxl_interop_blit(interop);
       // pxl_interop_clear(interop);
       pxl_interop_swap(interop);
@@ -300,30 +274,27 @@ main(int argc, char* argv[])
       //
       // SWAP WINDOW
       //
-
       glfwSwapBuffers(window);
 
       //
       // PUMP/POLL/WAIT
       //
-      
       glfwPollEvents(); // glfwWaitEvents();
     }
 
   //
   // CLEANUP
   //
-  
   pxl_interop_destroy(interop);
   
   glfwDestroyWindow(window);
 
   glfwTerminate();
 
-  cudaDeviceReset();
+  cuda(DeviceReset());
 
   // missing some clean up here
-  
+
   exit(EXIT_SUCCESS);
 }
 

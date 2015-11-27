@@ -1,4 +1,24 @@
-// -*- compile-command: "nvcc -m 32 -arch sm_30 -Xptxas=-v -cubin kernel.cu"; -*-
+// -*- compile-command: "nvcc arch sm_50 -Xptxas=-v -cubin kernel.cu"; -*-
+
+//
+//
+//
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+#include "assert_cuda.h"
+
+#ifdef __cplusplus
+}
+#endif
+
+//
+//
+//
+
+#define PXL_KERNEL_THREADS_PER_BLOCK  256 // enough for 4Kx2 monitor
 
 //
 //
@@ -69,8 +89,6 @@ pxl_kernel(const int width, const int height)
 //
 //
 
-#define PXL_KERNEL_THREADS_PER_BLOCK  256 // enough for 4Kx2 monitor
-
 extern "C"
 cudaError_t
 pxl_kernel_launcher(cudaArray_const_t array,
@@ -83,7 +101,7 @@ pxl_kernel_launcher(cudaArray_const_t array,
 
   // cuda_err = cudaEventRecord(event,stream);
 
-  cuda_err = cudaBindSurfaceToArray(surf,array);
+  cuda_err = cuda(BindSurfaceToArray(surf,array));
 
   if (cuda_err)
     return cuda_err;
