@@ -1,0 +1,3 @@
+*.o
+./test-cuda-opengl
+.sconsign.dblite

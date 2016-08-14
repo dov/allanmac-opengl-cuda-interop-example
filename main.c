@@ -55,7 +55,7 @@ pxl_glfw_fps(GLFWwindow* window)
 
       glfwGetFramebufferSize(window,&width,&height);
   
-      sprintf_s(tmp,64,"(%u x %u) - FPS: %.2f",width,height,fps);
+      sprintf(tmp,"(%u x %u) - FPS: %.2f",width,height,fps);
 
       glfwSetWindowTitle(window,tmp);
 
